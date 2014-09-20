@@ -25,7 +25,8 @@ namespace Quartz.Impl.MongoDB
             switch (currentBsonType)
             {
                 case BsonType.Null:
-                    return null;
+                    return TimeOfDay.HourMinuteAndSecondOfDay(23, 59, 59);
+
                 case BsonType.Document:
                     bsonReader.ReadStartDocument();
                     var hour = bsonReader.ReadInt32("Hour");
@@ -46,7 +47,9 @@ namespace Quartz.Impl.MongoDB
 
         public void Serialize(BsonWriter bsonWriter, Type nominalType, object value, IBsonSerializationOptions options)
         {
-            var timeOfDay = (TimeOfDay)value;
+            var timeOfDay = (TimeOfDay)value ??
+                TimeOfDay.HourMinuteAndSecondOfDay(23, 59, 59);
+
             bsonWriter.WriteStartDocument();
             bsonWriter.WriteInt32("Hour", timeOfDay.Hour);
             bsonWriter.WriteInt32("Minute", timeOfDay.Minute);

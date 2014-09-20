@@ -51,6 +51,10 @@
     <Reference Include="Machine.Specifications.Should">
       <HintPath>..\packages\Machine.Specifications.Should.0.7.2\lib\net40\Machine.Specifications.Should.dll</HintPath>
     </Reference>
+    <Reference Include="nunit.framework, Version=2.6.2.12296, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\NUnit.2.6.2\lib\nunit.framework.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -62,6 +66,8 @@
   <ItemGroup>
     <Compile Include="CronTriggerSpecs.cs" />
     <Compile Include="DailyIntervalTriggerSpecs.cs" />
+    <Compile Include="UnitTests\FailFastLoggerFactoryAdapter.cs" />
+    <Compile Include="UnitTests\MongoDbSmokeTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestJob.cs" />
   </ItemGroup>
@@ -76,6 +82,10 @@
     <ProjectReference Include="..\Quartz.Impl.MongoDB\Quartz.Impl.MongoDB.csproj">
       <Project>{41afee84-1ee9-4457-917a-52632b55a1ba}</Project>
       <Name>Quartz.Impl.MongoDB</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\quartznet\src\Quartz.Tests.Integration\Quartz.Tests.Integration.2010.csproj">
+      <Project>{5587AF00-160F-4EC1-98A2-BEABA411256C}</Project>
+      <Name>Quartz.Tests.Integration.2010</Name>
     </ProjectReference>
     <ProjectReference Include="..\quartznet\src\Quartz\Quartz.2010.csproj">
       <Project>{aef8823b-e45b-4b35-a4d0-c08c1196d017}</Project>

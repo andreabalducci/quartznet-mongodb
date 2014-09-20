@@ -1222,7 +1222,7 @@ namespace Quartz.Impl.MongoDB
                 {
                     groups.Add(triggerKey.Group);
                     IOperableTrigger trigger = this.Triggers.FindOneByIdAs<IOperableTrigger>(triggerKey.ToBsonDocument());
-                    var pausedJobGroup = this.PausedJobGroups.FindOneByIdAs<string>(trigger.JobKey.Group);
+                    var pausedJobGroup = this.PausedJobGroups.FindOneByIdAs<BsonDocument>(trigger.JobKey.Group);
                     if (pausedJobGroup != null)
                     {
                         continue;
@@ -1278,11 +1278,12 @@ namespace Quartz.Impl.MongoDB
             {
                 Collection.ISet<JobKey> keys = GetJobKeys(matcher);
 
-                foreach (string pausedJobGroup in this.PausedJobGroups.FindAllAs<string>())
+                foreach (var pausedJobGroup in this.PausedJobGroups.FindAllAs<BsonDocument>())
                 {
-                    if (matcher.CompareWithOperator.Evaluate(pausedJobGroup, matcher.CompareToValue))
+                    var jobGroupName = pausedJobGroup["_id"].AsString;
+                    if (matcher.CompareWithOperator.Evaluate(jobGroupName, matcher.CompareToValue))
                     {
-                        resumedGroups.Add(pausedJobGroup);
+                        resumedGroups.Add(jobGroupName);
                     }
                 }
 
@@ -1754,7 +1755,8 @@ namespace Quartz.Impl.MongoDB
         /// <seealso cref="IJobStore.GetPausedTriggerGroups()" />
         public virtual Collection.ISet<string> GetPausedTriggerGroups()
         {
-            return new Collection.HashSet<string>(this.PausedTriggerGroups.FindAllAs<string>());
+            var groups = this.PausedTriggerGroups.FindAllAs<BsonDocument>().Select(x => x["_id"].AsString).ToArray();
+            return new Collection.HashSet<string>(groups);
         }
     }
 }
