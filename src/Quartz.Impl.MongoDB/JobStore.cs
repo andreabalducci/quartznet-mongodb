@@ -844,7 +844,7 @@ namespace Quartz.Impl.MongoDB
         /// </returns>
         public virtual bool RemoveCalendar(string calName)
         {
-            if (this.Triggers.FindAs<BsonDocument>(Query.EQ("CalendarName", calName)) != null)
+            if (this.Triggers.FindAs<BsonDocument>(Query.EQ("CalendarName", calName)).SetLimit(1).Any())
             {
                 throw new JobPersistenceException("Calender cannot be removed if it is referenced by a Trigger!");
             }
@@ -944,7 +944,7 @@ namespace Quartz.Impl.MongoDB
             lock (lockObject)
             {
                 return this.Calendars
-                    .Distinct("Name")
+                    .Distinct("_id")
                     .Select(g => g.AsString)
                     .ToList();
             }
