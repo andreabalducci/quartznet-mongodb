@@ -37,6 +37,7 @@ using MongoDB.Driver.Wrappers;
 using Quartz.Impl.Matchers;
 using Quartz.Impl.Triggers;
 using Quartz.Spi;
+using Quartz.Util;
 
 namespace Quartz.Impl.MongoDB
 {
@@ -922,40 +923,7 @@ namespace Quartz.Impl.MongoDB
         /// </summary>
         public virtual Collection.ISet<JobKey> GetJobKeys(GroupMatcher<JobKey> matcher)
         {
-            MongoCursor<BsonDocument> result = null;
-            if (matcher.CompareWithOperator.GetType() == StringOperator.Anything.GetType())
-            {
-                result = this.Jobs
-                    .FindAllAs<BsonDocument>()
-                    .SetFields("_id")
-                    .SetSnapshot();
-            }
-            else if (matcher.CompareWithOperator.GetType() == StringOperator.Equality.GetType())
-            {
-                result = this.Jobs
-                    .FindAs<BsonDocument>(Query.EQ("_id.Group", matcher.CompareToValue))
-                    .SetFields("_id")
-                    .SetSnapshot();
-            }
-            else if (matcher.CompareWithOperator.GetType() == StringOperator.Contains.GetType())
-            {
-                result = this.Jobs
-                    .FindAs<BsonDocument>(Query.Matches("_id.Group", matcher.CompareToValue));
-            }
-            else if (matcher.CompareWithOperator.GetType() == StringOperator.EndsWith.GetType())
-            {
-                result = this.Jobs
-                    .FindAs<BsonDocument>(Query.Matches("_id.Group", matcher.CompareToValue + "$"));
-            }
-            else if (matcher.CompareWithOperator.GetType() == StringOperator.StartsWith.GetType())
-            {
-                result = this.Jobs
-                    .FindAs<BsonDocument>(Query.Matches("_id.Group", "^" + matcher.CompareToValue));
-            }
-
-            if (result == null)
-                throw new Exception("Invalid query matcher");
-
+            var result = QueryWithMatcher(Jobs, "_id.Group", matcher);
             var jobDetails = result.SetFields("_id").SetSnapshot();
 
             return new Collection.HashSet<JobKey>(jobDetails.Select(j =>
@@ -966,6 +934,36 @@ namespace Quartz.Impl.MongoDB
                     key["Group"].AsString
                 );
             }));
+        }
+
+        private MongoCursor<BsonDocument> QueryWithMatcher<TKey>(MongoCollection collection, string fieldName, StringMatcher<TKey> matcher) where TKey : Key<TKey>
+        {
+            MongoCursor<BsonDocument> result = null;
+            if (matcher.CompareWithOperator.GetType() == StringOperator.Anything.GetType())
+            {
+                result = collection.FindAllAs<BsonDocument>();
+            }
+            else if (matcher.CompareWithOperator.GetType() == StringOperator.Equality.GetType())
+            {
+                result = collection.FindAs<BsonDocument>(Query.EQ(fieldName, matcher.CompareToValue));
+            }
+            else if (matcher.CompareWithOperator.GetType() == StringOperator.Contains.GetType())
+            {
+                result = collection.FindAs<BsonDocument>(Query.Matches(fieldName, matcher.CompareToValue));
+            }
+            else if (matcher.CompareWithOperator.GetType() == StringOperator.EndsWith.GetType())
+            {
+                result = collection.FindAs<BsonDocument>(Query.Matches(fieldName, matcher.CompareToValue + "$"));
+            }
+            else if (matcher.CompareWithOperator.GetType() == StringOperator.StartsWith.GetType())
+            {
+                result = collection.FindAs<BsonDocument>(Query.Matches(fieldName, "^" + matcher.CompareToValue));
+            }
+
+            if (result == null)
+                throw new Exception("Invalid query matcher");
+
+            return result;
         }
 
         /// <summary>
@@ -993,15 +991,17 @@ namespace Quartz.Impl.MongoDB
         /// </summary>
         public virtual Collection.ISet<TriggerKey> GetTriggerKeys(GroupMatcher<TriggerKey> matcher)
         {
-            lock (lockObject)
-            {
-                var result = this.Triggers
-                    .FindAs<Spi.IOperableTrigger>(
-                        Query.EQ("Group", matcher.CompareToValue))
-                    .Select(t => t.Key);
+            var result = QueryWithMatcher(Triggers, "_id.Group", matcher);
+            var triggerDetails = result.SetFields("_id").SetSnapshot();
 
-                return new Collection.HashSet<TriggerKey>(result);
-            }
+            return new Collection.HashSet<TriggerKey>(triggerDetails.Select(j =>
+            {
+                var key = j["_id"].AsBsonDocument;
+                return new TriggerKey(
+                    key["Name"].AsString,
+                    key["Group"].AsString
+                );
+            }));
         }
 
         /// <summary>
