@@ -32,6 +32,8 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
+using MongoDB.Driver.Linq;
+using MongoDB.Driver.Wrappers;
 using Quartz.Impl.Matchers;
 using Quartz.Impl.Triggers;
 using Quartz.Spi;
@@ -81,7 +83,7 @@ namespace Quartz.Impl.MongoDB
 
             string connectionString;
 
-            if( ConfigurationManager.ConnectionStrings["quartznet-mongodb"] != null )
+            if (ConfigurationManager.ConnectionStrings["quartznet-mongodb"] != null)
                 connectionString = ConfigurationManager.ConnectionStrings["quartznet-mongodb"].ConnectionString;
             else
                 connectionString = DefaultConnectionString;
@@ -153,21 +155,21 @@ namespace Quartz.Impl.MongoDB
             {
                 cm.AutoMap();
 
-                cm.MapField( x => x.Name );
-                cm.MapField( x => x.Group );
-                cm.MapField( x => x.JobName );
-                cm.MapField( x => x.JobGroup );
-                cm.MapField( x => x.JobKey );
-                cm.MapField( x => x.Name );
-                cm.MapField( x => x.Group );
-                cm.MapField( x => x.Description );
-                cm.MapField( x => x.CalendarName );
-                cm.MapField( x => x.JobDataMap );
-                cm.MapField( x => x.MisfireInstruction );
-                cm.MapField( x => x.FireInstanceId );
-                cm.MapField( x => x.EndTimeUtc );
-                cm.MapField( x => x.StartTimeUtc );
-                cm.MapField( x => x.Priority );
+                cm.MapField(x => x.Name);
+                cm.MapField(x => x.Group);
+                cm.MapField(x => x.JobName);
+                cm.MapField(x => x.JobGroup);
+                cm.MapField(x => x.JobKey);
+                cm.MapField(x => x.Name);
+                cm.MapField(x => x.Group);
+                cm.MapField(x => x.Description);
+                cm.MapField(x => x.CalendarName);
+                cm.MapField(x => x.JobDataMap);
+                cm.MapField(x => x.MisfireInstruction);
+                cm.MapField(x => x.FireInstanceId);
+                cm.MapField(x => x.EndTimeUtc);
+                cm.MapField(x => x.StartTimeUtc);
+                cm.MapField(x => x.Priority);
 
                 cm.SetIsRootClass(true);
             });
@@ -181,19 +183,19 @@ namespace Quartz.Impl.MongoDB
                 cm.SetIgnoreExtraElements(true);
             });
 
-            BsonClassMap.RegisterClassMap<CronTriggerImpl>( cm =>
+            BsonClassMap.RegisterClassMap<CronTriggerImpl>(cm =>
             {
                 cm.AutoMap();
 
-                cm.MapField( x => x.CronExpressionString );
-                cm.MapField( x => x.TimeZone );
+                cm.MapField(x => x.CronExpressionString);
+                cm.MapField(x => x.TimeZone);
 
-                cm.MapField( "nextFireTimeUtc" );
-                cm.MapField( "previousFireTimeUtc" );
-                cm.MapField( x => x.TimeZone ).SetSerializer( new TimeZoneInfoSerializer() );
-                cm.SetIgnoreExtraElements( true );
-            } );
-            
+                cm.MapField("nextFireTimeUtc");
+                cm.MapField("previousFireTimeUtc");
+                cm.MapField(x => x.TimeZone).SetSerializer(new TimeZoneInfoSerializer());
+                cm.SetIgnoreExtraElements(true);
+            });
+
             BsonSerializer.RegisterSerializer(typeof(TimeOfDay), new TimeOfDaySerializer());
 
             BsonClassMap.RegisterClassMap<DailyTimeIntervalTriggerImpl>(cm =>
@@ -920,15 +922,50 @@ namespace Quartz.Impl.MongoDB
         /// </summary>
         public virtual Collection.ISet<JobKey> GetJobKeys(GroupMatcher<JobKey> matcher)
         {
-            lock (lockObject)
+            MongoCursor<BsonDocument> result = null;
+            if (matcher.CompareWithOperator.GetType() == StringOperator.Anything.GetType())
             {
-                var result = this.Jobs
-                    .FindAs<IJobDetail>(
-                        Query.EQ("Group", matcher.CompareToValue))
-                    .Select(j => j.Key);
-
-                return new Collection.HashSet<JobKey>(result);
+                result = this.Jobs
+                    .FindAllAs<BsonDocument>()
+                    .SetFields("_id")
+                    .SetSnapshot();
             }
+            else if (matcher.CompareWithOperator.GetType() == StringOperator.Equality.GetType())
+            {
+                result = this.Jobs
+                    .FindAs<BsonDocument>(Query.EQ("_id.Group", matcher.CompareToValue))
+                    .SetFields("_id")
+                    .SetSnapshot();
+            }
+            else if (matcher.CompareWithOperator.GetType() == StringOperator.Contains.GetType())
+            {
+                result = this.Jobs
+                    .FindAs<BsonDocument>(Query.Matches("_id.Group", matcher.CompareToValue));
+            }
+            else if (matcher.CompareWithOperator.GetType() == StringOperator.EndsWith.GetType())
+            {
+                result = this.Jobs
+                    .FindAs<BsonDocument>(Query.Matches("_id.Group", matcher.CompareToValue + "$"));
+            }
+            else if (matcher.CompareWithOperator.GetType() == StringOperator.StartsWith.GetType())
+            {
+                result = this.Jobs
+                    .FindAs<BsonDocument>(Query.Matches("_id.Group", "^" + matcher.CompareToValue));
+            }
+
+            if (result == null)
+                throw new Exception("Invalid query matcher");
+
+            var jobDetails = result.SetFields("_id").SetSnapshot();
+
+            return new Collection.HashSet<JobKey>(jobDetails.Select(j =>
+            {
+                var key = j["_id"].AsBsonDocument;
+                return new JobKey(
+                    key["Name"].AsString,
+                    key["Group"].AsString
+                );
+            }));
         }
 
         /// <summary>
@@ -1056,7 +1093,7 @@ namespace Quartz.Impl.MongoDB
                     this.PausedTriggerGroups.Save(
                         new BsonDocument(
                             new BsonElement("_id", matcher.CompareToValue)));
-                    
+
                     pausedGroups.Add(matcher.CompareToValue);
                 }
                 else
@@ -1289,7 +1326,7 @@ namespace Quartz.Impl.MongoDB
 
                 this.PausedTriggerGroups.Remove(
                         Query.All("_id", new BsonArray(resumedGroups)));
-                
+
                 foreach (JobKey key in keys)
                 {
                     IList<IOperableTrigger> triggers = GetTriggersForJob(key);
@@ -1424,13 +1461,13 @@ namespace Quartz.Impl.MongoDB
                 List<IOperableTrigger> result = new List<IOperableTrigger>();
                 Collection.ISet<JobKey> acquiredJobKeysForNoConcurrentExec = new Collection.HashSet<JobKey>();
                 DateTimeOffset? firstAcquiredTriggerFireTime = null;
-                
+
                 var candidates = this.Triggers.FindAs<Spi.IOperableTrigger>(
                     Query.And(
                         Query.EQ("State", "Waiting"),
                         Query.LTE("nextFireTimeUtc", (noLaterThan + timeWindow).UtcDateTime)))
                     .OrderBy(t => t.GetNextFireTimeUtc()).ThenByDescending(t => t.Priority);
-                
+
                 foreach (IOperableTrigger trigger in candidates)
                 {
                     if (trigger.GetNextFireTimeUtc() == null)
@@ -1443,7 +1480,7 @@ namespace Quartz.Impl.MongoDB
                     // So we select from the first next trigger to fire up until the max fire ahead time after that...
                     // which will perfectly honor the fireAheadTime window because the no firing will occur until
                     // the first acquired trigger's fire time arrives.
-                    if (firstAcquiredTriggerFireTime != null 
+                    if (firstAcquiredTriggerFireTime != null
                         && trigger.GetNextFireTimeUtc() > (firstAcquiredTriggerFireTime.Value + timeWindow))
                     {
                         break;
@@ -1462,7 +1499,7 @@ namespace Quartz.Impl.MongoDB
                     // put it back into the timeTriggers set and continue to search for next trigger.
                     JobKey jobKey = trigger.JobKey;
                     IJobDetail job = this.Jobs.FindOneByIdAs<IJobDetail>(jobKey.ToBsonDocument());
-                    
+
                     if (job.ConcurrentExecutionDisallowed)
                     {
                         if (acquiredJobKeysForNoConcurrentExec.Contains(jobKey))
@@ -1580,7 +1617,7 @@ namespace Quartz.Impl.MongoDB
                         IEnumerable<BsonDocument> triggerKeys = jobTriggers
                             .Where(t => !t.Key.Equals(trigger.Key))
                             .Select(t => t.Key.ToBsonDocument());
-                        
+
                         this.Triggers.Update(
                             Query.And(
                                 Query.In("_id", triggerKeys),
@@ -1592,7 +1629,7 @@ namespace Quartz.Impl.MongoDB
                                 Query.In("_id", triggerKeys),
                                 Query.EQ("State", "Paused")),
                             Update.Set("State", "PausedAndBlocked"));
-                        
+
                         this.BlockedJobs.Save(
                             new BsonDocument(
                                 new BsonElement("_id", job.Key.ToBsonDocument())));
@@ -1683,7 +1720,7 @@ namespace Quartz.Impl.MongoDB
                     this.Triggers.Update(
                         Query.EQ("_id", trigger.Key.ToBsonDocument()),
                         Update.Set("State", "Complete"));
-                    
+
                     signaler.SignalSchedulingChange(null);
                 }
                 else if (triggerInstCode == SchedulerInstruction.SetTriggerError)
