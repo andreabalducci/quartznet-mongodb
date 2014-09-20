@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30723.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quartz.Impl.MongoDB", "Quartz.Impl.MongoDB\Quartz.Impl.MongoDB.csproj", "{41AFEE84-1EE9-4457-917A-52632B55A1BA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "package", "package", "{8341DC55-5656-478A-B15F-CD3CC0C087C0}"
@@ -17,6 +19,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{F970C7
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quartz.Impl.MongoDB.Tests", "Quartz.Impl.MongoDB.Tests\Quartz.Impl.MongoDB.Tests.csproj", "{9E7E992E-48B2-4736-88A3-D65E736AD753}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Quartz", "Quartz", "{56C54AC4-277D-4D13-B81C-69433EFFCEAA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quartz.2010", "quartznet\src\Quartz\Quartz.2010.csproj", "{AEF8823B-E45B-4B35-A4D0-C08C1196D017}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quartz.Tests.Integration.2010", "quartznet\src\Quartz.Tests.Integration\Quartz.Tests.Integration.2010.csproj", "{5587AF00-160F-4EC1-98A2-BEABA411256C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quartz.Tests.Unit.2010", "quartznet\src\Quartz.Tests.Unit\Quartz.Tests.Unit.2010.csproj", "{3F8CA4D4-AE20-4767-8573-E39A17EC6F4E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -48,8 +58,43 @@ Global
 		{9E7E992E-48B2-4736-88A3-D65E736AD753}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{9E7E992E-48B2-4736-88A3-D65E736AD753}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{9E7E992E-48B2-4736-88A3-D65E736AD753}.Release|x86.ActiveCfg = Release|Any CPU
+		{AEF8823B-E45B-4B35-A4D0-C08C1196D017}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AEF8823B-E45B-4B35-A4D0-C08C1196D017}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AEF8823B-E45B-4B35-A4D0-C08C1196D017}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{AEF8823B-E45B-4B35-A4D0-C08C1196D017}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{AEF8823B-E45B-4B35-A4D0-C08C1196D017}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AEF8823B-E45B-4B35-A4D0-C08C1196D017}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AEF8823B-E45B-4B35-A4D0-C08C1196D017}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AEF8823B-E45B-4B35-A4D0-C08C1196D017}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{AEF8823B-E45B-4B35-A4D0-C08C1196D017}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{AEF8823B-E45B-4B35-A4D0-C08C1196D017}.Release|x86.ActiveCfg = Release|Any CPU
+		{5587AF00-160F-4EC1-98A2-BEABA411256C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5587AF00-160F-4EC1-98A2-BEABA411256C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5587AF00-160F-4EC1-98A2-BEABA411256C}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{5587AF00-160F-4EC1-98A2-BEABA411256C}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{5587AF00-160F-4EC1-98A2-BEABA411256C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5587AF00-160F-4EC1-98A2-BEABA411256C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5587AF00-160F-4EC1-98A2-BEABA411256C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5587AF00-160F-4EC1-98A2-BEABA411256C}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{5587AF00-160F-4EC1-98A2-BEABA411256C}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{5587AF00-160F-4EC1-98A2-BEABA411256C}.Release|x86.ActiveCfg = Release|Any CPU
+		{3F8CA4D4-AE20-4767-8573-E39A17EC6F4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F8CA4D4-AE20-4767-8573-E39A17EC6F4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F8CA4D4-AE20-4767-8573-E39A17EC6F4E}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{3F8CA4D4-AE20-4767-8573-E39A17EC6F4E}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{3F8CA4D4-AE20-4767-8573-E39A17EC6F4E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3F8CA4D4-AE20-4767-8573-E39A17EC6F4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F8CA4D4-AE20-4767-8573-E39A17EC6F4E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F8CA4D4-AE20-4767-8573-E39A17EC6F4E}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{3F8CA4D4-AE20-4767-8573-E39A17EC6F4E}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{3F8CA4D4-AE20-4767-8573-E39A17EC6F4E}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{AEF8823B-E45B-4B35-A4D0-C08C1196D017} = {56C54AC4-277D-4D13-B81C-69433EFFCEAA}
+		{5587AF00-160F-4EC1-98A2-BEABA411256C} = {56C54AC4-277D-4D13-B81C-69433EFFCEAA}
+		{3F8CA4D4-AE20-4767-8573-E39A17EC6F4E} = {56C54AC4-277D-4D13-B81C-69433EFFCEAA}
 	EndGlobalSection
 EndGlobal
