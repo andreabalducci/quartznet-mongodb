@@ -301,6 +301,7 @@ namespace Quartz.Impl.MongoDB
             this.Schedulers.Remove(
                     Query.EQ("_id", this.instanceId));
 
+            // @@TODO multi
             this.Triggers.Update(
                 Query.EQ("SchedulerInstanceId", this.instanceId),
                 Update.Unset("SchedulerInstanceId")
@@ -1453,6 +1454,7 @@ namespace Quartz.Impl.MongoDB
 
                 IEnumerable<BsonValue> activeInstances = this.Schedulers.Distinct("_id");
 
+                // TODO: check multi
                 this.Triggers.Update(
                     Query.NotIn("SchedulerInstanceId", activeInstances),
                     Update.Unset("SchedulerInstanceId")
@@ -1618,12 +1620,14 @@ namespace Quartz.Impl.MongoDB
                             .Where(t => !t.Key.Equals(trigger.Key))
                             .Select(t => t.Key.ToBsonDocument());
 
+                        // @@TODO Multi
                         this.Triggers.Update(
                             Query.And(
                                 Query.In("_id", triggerKeys),
                                 Query.EQ("State", "Waiting")),
                             Update.Set("State", "Blocked"));
 
+                        // @@TODO Multi
                         this.Triggers.Update(
                             Query.And(
                                 Query.In("_id", triggerKeys),
@@ -1671,12 +1675,15 @@ namespace Quartz.Impl.MongoDB
                 {
                     IList<Spi.IOperableTrigger> jobTriggers = this.GetTriggersForJob(jobDetail.Key);
                     IEnumerable<BsonDocument> triggerKeys = jobTriggers.Select(t => t.Key.ToBsonDocument());
+                    
+                    //@@TODO: multi
                     this.Triggers.Update(
                         Query.And(
                             Query.In("_id", triggerKeys),
                             Query.EQ("State", "Blocked")),
                         Update.Set("State", "Waiting"));
 
+                    //@@TODO: multi
                     this.Triggers.Update(
                         Query.And(
                             Query.In("_id", triggerKeys),
@@ -1737,6 +1744,8 @@ namespace Quartz.Impl.MongoDB
                     Log.Info(string.Format(CultureInfo.InvariantCulture, "All triggers of Job {0} set to ERROR state.", trigger.JobKey));
                     IList<Spi.IOperableTrigger> jobTriggers = this.GetTriggersForJob(jobDetail.Key);
                     IEnumerable<BsonDocument> triggerKeys = jobTriggers.Select(t => t.Key.ToBsonDocument());
+                    
+                    // @@TODO multi
                     this.Triggers.Update(
                         Query.In("_id", triggerKeys),
                         Update.Set("State", "Error"));
@@ -1747,6 +1756,7 @@ namespace Quartz.Impl.MongoDB
                 {
                     IList<Spi.IOperableTrigger> jobTriggers = this.GetTriggersForJob(jobDetail.Key);
                     IEnumerable<BsonDocument> triggerKeys = jobTriggers.Select(t => t.Key.ToBsonDocument());
+                    // @@TODO multi
                     this.Triggers.Update(
                         Query.In("_id", triggerKeys),
                         Update.Set("State", "Complete"));
