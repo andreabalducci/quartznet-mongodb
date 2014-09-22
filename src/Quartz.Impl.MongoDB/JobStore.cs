@@ -1456,7 +1456,6 @@ namespace Quartz.Impl.MongoDB
 
                 IEnumerable<BsonValue> activeInstances = this.Schedulers.Distinct("_id");
 
-                // TODO: check multi
                 this.Triggers.Update(
                     Query
                         .NotIn("SchedulerInstanceId", activeInstances),
@@ -1629,19 +1628,22 @@ namespace Quartz.Impl.MongoDB
                             .Where(t => !t.Key.Equals(trigger.Key))
                             .Select(t => t.Key.ToBsonDocument());
 
-                        // @@TODO Multi
                         this.Triggers.Update(
                             Query.And(
                                 Query.In("_id", triggerKeys),
                                 Query.EQ("State", "Waiting")),
-                            Update.Set("State", "Blocked"));
+                            Update
+                                .Set("State", "Blocked"),
+                            UpdateFlags.Multi
+                        );
 
-                        // @@TODO Multi
                         this.Triggers.Update(
                             Query.And(
                                 Query.In("_id", triggerKeys),
                                 Query.EQ("State", "Paused")),
-                            Update.Set("State", "PausedAndBlocked"));
+                            Update.Set("State", "PausedAndBlocked"),
+                            UpdateFlags.Multi
+                        );
 
                         this.BlockedJobs.Save(
                             new BsonDocument(
@@ -1685,19 +1687,23 @@ namespace Quartz.Impl.MongoDB
                     IList<Spi.IOperableTrigger> jobTriggers = this.GetTriggersForJob(jobDetail.Key);
                     IEnumerable<BsonDocument> triggerKeys = jobTriggers.Select(t => t.Key.ToBsonDocument());
                     
-                    //@@TODO: multi
                     this.Triggers.Update(
                         Query.And(
                             Query.In("_id", triggerKeys),
                             Query.EQ("State", "Blocked")),
-                        Update.Set("State", "Waiting"));
+                        Update
+                            .Set("State", "Waiting"),
+                        UpdateFlags.Multi
+                    );
 
-                    //@@TODO: multi
                     this.Triggers.Update(
                         Query.And(
                             Query.In("_id", triggerKeys),
                             Query.EQ("State", "PausedAndBlocked")),
-                        Update.Set("State", "Paused"));
+                        Update
+                            .Set("State", "Paused"),
+                        UpdateFlags.Multi
+                    );
 
                     signaler.SignalSchedulingChange(null);
                 }
@@ -1754,10 +1760,13 @@ namespace Quartz.Impl.MongoDB
                     IList<Spi.IOperableTrigger> jobTriggers = this.GetTriggersForJob(jobDetail.Key);
                     IEnumerable<BsonDocument> triggerKeys = jobTriggers.Select(t => t.Key.ToBsonDocument());
                     
-                    // @@TODO multi
                     this.Triggers.Update(
-                        Query.In("_id", triggerKeys),
-                        Update.Set("State", "Error"));
+                        Query
+                            .In("_id", triggerKeys),
+                        Update
+                            .Set("State", "Error"),
+                        UpdateFlags.Multi
+                    );
 
                     signaler.SignalSchedulingChange(null);
                 }
@@ -1765,10 +1774,14 @@ namespace Quartz.Impl.MongoDB
                 {
                     IList<Spi.IOperableTrigger> jobTriggers = this.GetTriggersForJob(jobDetail.Key);
                     IEnumerable<BsonDocument> triggerKeys = jobTriggers.Select(t => t.Key.ToBsonDocument());
-                    // @@TODO multi
+
                     this.Triggers.Update(
-                        Query.In("_id", triggerKeys),
-                        Update.Set("State", "Complete"));
+                        Query
+                            .In("_id", triggerKeys),
+                        Update
+                            .Set("State", "Complete"),
+                        UpdateFlags.Multi
+                    );
 
                     signaler.SignalSchedulingChange(null);
                 }
