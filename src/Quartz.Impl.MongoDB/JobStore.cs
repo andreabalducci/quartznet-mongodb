@@ -301,11 +301,13 @@ namespace Quartz.Impl.MongoDB
             this.Schedulers.Remove(
                     Query.EQ("_id", this.instanceId));
 
-            // @@TODO multi
             this.Triggers.Update(
                 Query.EQ("SchedulerInstanceId", this.instanceId),
-                Update.Unset("SchedulerInstanceId")
-                    .Set("State", "Waiting"));
+                Update
+                    .Unset("SchedulerInstanceId")
+                    .Set("State", "Waiting"),
+                UpdateFlags.Multi
+            );
         }
 
         /// <summary>
@@ -1456,9 +1458,13 @@ namespace Quartz.Impl.MongoDB
 
                 // TODO: check multi
                 this.Triggers.Update(
-                    Query.NotIn("SchedulerInstanceId", activeInstances),
-                    Update.Unset("SchedulerInstanceId")
-                        .Set("State", "Waiting"));
+                    Query
+                        .NotIn("SchedulerInstanceId", activeInstances),
+                    Update
+                        .Unset("SchedulerInstanceId")
+                        .Set("State", "Waiting"),
+                    UpdateFlags.Multi
+                );
 
                 List<IOperableTrigger> result = new List<IOperableTrigger>();
                 Collection.ISet<JobKey> acquiredJobKeysForNoConcurrentExec = new Collection.HashSet<JobKey>();
@@ -1468,7 +1474,10 @@ namespace Quartz.Impl.MongoDB
                     Query.And(
                         Query.EQ("State", "Waiting"),
                         Query.LTE("nextFireTimeUtc", (noLaterThan + timeWindow).UtcDateTime)))
-                    .OrderBy(t => t.GetNextFireTimeUtc()).ThenByDescending(t => t.Priority);
+                    .OrderBy(t => t.GetNextFireTimeUtc())
+                    .ThenByDescending(t => t.Priority)
+                    .ThenByDescending(t => t.Key)
+                ;
 
                 foreach (IOperableTrigger trigger in candidates)
                 {
