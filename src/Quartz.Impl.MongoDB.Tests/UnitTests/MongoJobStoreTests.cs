@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -42,17 +43,39 @@ namespace Quartz.Impl.MongoDB.Tests.UnitTests
         }
 
         [Test]
+        public void t()
+        {
+            IJobStore jobStore;
+            var scheduler = BuildScheduler(out jobStore);
+
+            ScheduleSampleJob(scheduler, 1);
+
+            scheduler.Start();
+            Thread.Sleep(5000);
+
+            var triggers = jobStore.AcquireNextTriggers(
+                DateTimeOffset.UtcNow.AddDays(1),
+                100,
+                TimeSpan.FromMinutes(10)
+            );
+            
+            var triggersCollection = GetTriggersCollection(jobStore);
+
+            foreach (var trigger in triggersCollection.FindAllAs<BsonDocument>())
+            {
+                Debug.WriteLine(trigger["_id"].AsBsonDocument.ToJson());                
+                Debug.WriteLine(trigger["State"].AsString);                
+            }
+        }
+
+        [Test]
         public void shutdown_should_release_acquired_triggers()
         {
-            var sf = new TestStdSchedulerFactory(BuildProperties());
-            var scheduler = sf.GetScheduler();
-
-            scheduler.Clear();
+            IJobStore jobStore;
+            var scheduler = BuildScheduler(out jobStore);
 
             ScheduleSampleJob(scheduler, 1);
             ScheduleSampleJob(scheduler, 2);
-
-            var jobStore = sf.Resources.JobStore;
 
             var triggers = jobStore.AcquireNextTriggers(
                 DateTimeOffset.UtcNow.AddDays(1), 
@@ -64,10 +87,7 @@ namespace Quartz.Impl.MongoDB.Tests.UnitTests
 
             scheduler.Shutdown();
 
-            var triggersCollection = (MongoCollection)
-                jobStore.GetType()
-                    .GetProperty("Triggers", BindingFlags.NonPublic | BindingFlags.Instance)
-                    .GetValue(jobStore, null);
+            var triggersCollection = GetTriggersCollection(jobStore);
                     
             foreach (var t in triggers)
             {
@@ -76,6 +96,25 @@ namespace Quartz.Impl.MongoDB.Tests.UnitTests
             }
 
             Assert.IsEmpty(FailFastLoggerFactoryAdapter.Errors, "Found error from logging output");
+        }
+
+        static MongoCollection GetTriggersCollection(IJobStore jobStore)
+        {
+            var triggersCollection = (MongoCollection)
+                jobStore.GetType()
+                    .GetProperty("Triggers", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .GetValue(jobStore, null);
+            return triggersCollection;
+        }
+
+        IScheduler BuildScheduler(out IJobStore jobStore)
+        {
+            var sf = new TestStdSchedulerFactory(BuildProperties());
+            var scheduler = sf.GetScheduler();
+            jobStore = sf.Resources.JobStore;
+
+            scheduler.Clear();
+            return scheduler;
         }
 
         static void ScheduleSampleJob(IScheduler scheduler, int id)
