@@ -1345,19 +1345,22 @@ namespace Quartz.Impl.MongoDB
                 .SetElement(new BsonElement("Expires", (SystemTime.Now() + new TimeSpan(0, 10, 0)).UtcDateTime))
                 .SetElement(new BsonElement("State", "Running")));
 
-            this.Schedulers.Remove(
+            var removeResult = this.Schedulers.Remove(
                 Query.LT("Expires", SystemTime.Now().UtcDateTime));
 
-            IEnumerable<BsonValue> activeInstances = this.Schedulers.Distinct("_id");
+            if (removeResult.DocumentsAffected > 0)
+            {
+                IEnumerable<BsonValue> activeInstances = this.Schedulers.Distinct("_id");
 
-            this.Triggers.Update(
-                Query
-                    .NotIn("SchedulerInstanceId", activeInstances),
-                Update
-                    .Unset("SchedulerInstanceId")
-                    .Set("State", "Waiting"),
-                UpdateFlags.Multi
-            );
+                this.Triggers.Update(
+                    Query
+                        .NotIn("SchedulerInstanceId", activeInstances),
+                    Update
+                        .Unset("SchedulerInstanceId")
+                        .Set("State", "Waiting"),
+                    UpdateFlags.Multi
+                );
+            }
 
             List<IOperableTrigger> result = new List<IOperableTrigger>();
             Collection.ISet<JobKey> acquiredJobKeysForNoConcurrentExec = new Collection.HashSet<JobKey>();
