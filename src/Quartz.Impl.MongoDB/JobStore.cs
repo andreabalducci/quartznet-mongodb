@@ -101,6 +101,19 @@ namespace Quartz.Impl.MongoDB
             this.database = client.GetServer().GetDatabase(urlBuilder.DatabaseName);
         }
 
+        private void SetupDb()
+        {
+            this.Triggers.CreateIndex(
+                IndexKeys.Ascending("SchedulerInstanceId")
+            );
+
+            this.Triggers.CreateIndex(
+                IndexKeys
+                    .Ascending("State","nextFireTimeUtc")
+                    .Descending("Priority","Key")
+            );
+        }
+
         /// <summary>
         /// Initializes the <see cref="JobStore"/> class.
         /// </summary>
@@ -253,6 +266,7 @@ namespace Quartz.Impl.MongoDB
         public virtual void Initialize(ITypeLoadHelper loadHelper, ISchedulerSignaler s)
         {
             signaler = s;
+            SetupDb();
             Log.Info("MongoDB JobStore initialized.");
         }
 
@@ -1376,9 +1390,6 @@ namespace Quartz.Impl.MongoDB
                     .Descending("Priority")
                     .Descending("Key")
                 )
-                //.OrderBy(t => t.GetNextFireTimeUtc())
-                //.ThenByDescending(t => t.Priority)
-                //.ThenByDescending(t => t.Key)
             ;
 
             foreach (IOperableTrigger trigger in candidates)
