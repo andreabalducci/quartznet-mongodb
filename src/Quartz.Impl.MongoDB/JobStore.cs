@@ -1185,6 +1185,11 @@ namespace Quartz.Impl.MongoDB
             {
                 groups.Add(triggerKey.Group);
                 IOperableTrigger trigger = this.Triggers.FindOneByIdAs<IOperableTrigger>(triggerKey.ToBsonDocument());
+                if (trigger == null)
+                {
+                    continue;
+                }
+
                 var pausedJobGroup = this.PausedJobGroups.FindOneByIdAs<BsonDocument>(trigger.JobKey.Group);
                 if (pausedJobGroup != null)
                 {
