@@ -1148,7 +1148,8 @@ namespace Quartz.Impl.MongoDB
 
             BsonDocument triggerState = this.Triggers.FindOneByIdAs<BsonDocument>(triggerKey.ToBsonDocument());
             // if the trigger is not paused resuming it does not make sense...
-            if (triggerState["State"] != "Paused" &&
+            if (triggerState != null &&
+                triggerState["State"] != "Paused" &&
                 triggerState["State"] != "PausedAndBlocked")
             {
                 return;
