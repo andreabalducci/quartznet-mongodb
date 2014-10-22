@@ -206,14 +206,14 @@ namespace Quartz.Impl.MongoDB
                 cm.SetIgnoreExtraElements(true);
             });
 
-            BsonSerializer.RegisterSerializer(typeof(TimeOfDay), new TimeOfDaySerializer());
-
             BsonClassMap.RegisterClassMap<DailyTimeIntervalTriggerImpl>(cm =>
             {
                 cm.AutoMap();
                 cm.MapField("complete");
                 cm.MapField("nextFireTimeUtc");
                 cm.MapField("previousFireTimeUtc");
+                cm.MapField(x => x.StartTimeOfDay).SetIgnoreIfNull(true).SetSerializer(new TimeOfDaySerializer());
+                cm.MapField(x => x.EndTimeOfDay).SetIgnoreIfNull(true).SetSerializer(new TimeOfDaySerializer());
                 cm.MapField(x => x.TimeZone).SetSerializer(new TimeZoneInfoSerializer());
                 cm.SetIgnoreExtraElements(true);
             });
@@ -617,15 +617,20 @@ namespace Quartz.Impl.MongoDB
 
                 if (removeOrphanedJob)
                 {
-                    IJobDetail jobDetail = this.RetrieveJob(trigger.JobKey);
-                    IList<IOperableTrigger> trigs = this.GetTriggersForJob(jobDetail.Key);
+                    bool jobDurable = this.Jobs.Count(Query.And(
+                        Query.EQ("_id", trigger.JobKey.ToBsonDocument()),
+                        Query.EQ("Durable", true))) > 0;
+
+                    IList<IOperableTrigger> trigs = this.GetTriggersForJob(trigger.JobKey);
+
+                    // if there are no other triggers referencing the job and the job is not marked as durable, it is safe to delete the job.
                     if ((trigs == null
                             || trigs.Count == 0)
-                        && !jobDetail.Durable)
+                        && !jobDurable)
                     {
-                        if (this.RemoveJob(jobDetail.Key))
+                        if (this.RemoveJob(trigger.JobKey))
                         {
-                            signaler.NotifySchedulerListenersJobDeleted(jobDetail.Key);
+                            signaler.NotifySchedulerListenersJobDeleted(trigger.JobKey);
                         }
                     }
                 }
